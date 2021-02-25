@@ -1,0 +1,80 @@
+---
+title: "mouse"
+author: "Danil Panshin"
+date: "2/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+if (!require("pacman")) install.packages("pacman") 
+pacman::p_load(PerformanceAnalytics, ggplot2, readr, data.table)
+library("PerformanceAnalytics")
+library("ggplot2")
+library("readxl")
+library(dplyr)
+mouse_down <- read_xls('/Users/Donel/Documents/R_projects/Data_Cortex_Nuclear (1).xls')
+```
+# Посчитаем число мышек
+```{r}
+number_mouse <- count(mouse_down)
+number_mouse
+```
+
+# В этом датасете возможно выделить следующие группы
+
+1. c-CS-s: контрольные мыши, стимулированные к обучению, инъецированные физиологическим раствором (9 мышей).
+2. c-CS-m: контрольные мыши, стимулированные к обучению, инъецированные мемантином (10 мышей).
+3. c-SC-s: контрольные мыши , не стимулированные к обучению, инъецированы физиологическим раствором (9 мышей).
+4. c-SC-m: контрольные мыши, не стимулированные к обучению, инъецированные мемантином (10 мышей).
+5. t-CS-s: мыши с трисомией, стимулированные к обучению, инъецированные физиологическим раствором (7 мышей).
+6. t-CS-m: мыши с трисомией, стимулированные к обучению, инъецированные мемантином (9 мышей).
+7. t-SC-s: мыши с трисомией, не стимулированные к обучению, вводили физиологический раствор (9 мышей).
+8. t-SC-m: мыши с трисомией, не стимулированные к обучению, вводили мемантин (9 мышей).
+
+# not NA
+```{r}
+  sum(!is.na(mouse_down))
+```
+
+# NA
+```{r}
+  sum(is.na(mouse_down))
+```
+
+# Исследования различий в экспрессии белка
+```{r}
+c_CS_m <- slice(mouse_down, 1:150)
+c_SC_m <- slice(mouse_down, 150:300)
+c_CS_s <- slice(mouse_down, 300:435)
+c_SC_s <- slice(mouse_down, 435:570)
+t_CS_m <- slice(mouse_down, 570:705)
+t_SC_m <- slice(mouse_down, 705:840)
+t_CS_s <- slice(mouse_down, 840:945)
+t_SC_s <- slice(mouse_down, 945:1080)
+ERBB4_N <- c(mean(c_CS_m$ERBB4_N), mean(c_SC_m$ERBB4_N), mean(c_CS_s$ERBB4_N)
+       , mean(c_SC_s$ERBB4_N), mean(t_CS_m$ERBB4_N), mean(t_SC_m$ERBB4_N)
+       , mean(t_CS_s$ERBB4_N), mean(t_SC_s$ERBB4_N))
+good_mouse <- data.frame(
+  mouse_class = c('c_CS_m', 'c_SC_m', 'c_CS_s', 'c_SC_s', 't_CS_m', 't_SC_m', 't_CS_s', 't_SC_s'),
+  ERBB4_N = ERBB4_N)
+ERBB4_N_bar <- barplot(good_mouse$ERBB4_N , border=F , names.arg=good_mouse$mouse_class , 
+                  las=2 , 
+                  col=c(rgb(0.3,0.1,0.4,0.6) , rgb(0.3,0.5,0.4,0.6) , rgb(0.3,0.9,0.4,0.6) ,  rgb(0.3,0.9,0.4,0.6)) , 
+                  ylim=c(0,0.2) , 
+                  main="ERBB4_N")
+ERBB4_N_bar
+```
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,134 @@
+---
+title: "cute_mouse"
+author: "Danil Panshin"
+date: "2/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+if (!require("pacman")) install.packages("pacman") 
+pacman::p_load(PerformanceAnalytics, ggplot2, readxl, dplyr, factoextra, performance, rgl, GGally, plot3D, rgl)
+library("PerformanceAnalytics")
+library("plot3D")
+library("ggplot2")
+library("readxl")
+library("rgl")
+library("dplyr")
+library("factoextra")
+library("performance")
+library("rgl")
+library("GGally")
+mouse_down <- read_xls('/Users/Donel/Documents/R_projects/Data_Cortex_Nuclear (1).xls')
+```
+# Посчитаем число мышек
+```{r}
+number_mouse <- count(mouse_down)
+number_mouse
+```
+
+# В этом датасете возможно выделить следующие группы
+
+1. c-CS-s: контрольные мыши, стимулированные к обучению, инъецированные физиологическим раствором (9 мышей).
+2. c-CS-m: контрольные мыши, стимулированные к обучению, инъецированные мемантином (10 мышей).
+3. c-SC-s: контрольные мыши , не стимулированные к обучению, инъецированы физиологическим раствором (9 мышей).
+4. c-SC-m: контрольные мыши, не стимулированные к обучению, инъецированные мемантином (10 мышей).
+5. t-CS-s: мыши с трисомией, стимулированные к обучению, инъецированные физиологическим раствором (7 мышей).
+6. t-CS-m: мыши с трисомией, стимулированные к обучению, инъецированные мемантином (9 мышей).
+7. t-SC-s: мыши с трисомией, не стимулированные к обучению, вводили физиологический раствор (9 мышей).
+8. t-SC-m: мыши с трисомией, не стимулированные к обучению, вводили мемантин (9 мышей).
+
+# not NA
+```{r}
+  sum(!is.na(mouse_down))
+```
+
+# NA
+```{r}
+  sum(is.na(mouse_down))
+```
+
+# Hазличия в уровне продукции BDNF_N в зависимости от класса в
+эксперименте
+```{r}
+cute_mouse <- na.omit(mouse_down)
+for_anova <- data.frame(cute_mouse[,c(1, 4, 82)])
+for_anova$class <- factor(c("c-CS-m", "c_SC_m", "c_CS_s", "c_SC_s", "t_CS_m", "t_SC_m", "t_CS_s", "t_SC_s"))
+BDFN_class <- lm(BDNF_N ~ class, data = for_anova)
+ANOVA<- aov(BDFN_class)
+prot_tukey <- TukeyHSD(x=ANOVA, conf.level=0.95)
+prot_tukey
+plot(prot_tukey , las=1 , col="coral")
+```
+
+# Модель со всеми предикторами
+
+```{r}
+
+full_model <- lm(ERBB4_N ~ DYRK1A_N + ITSN1_N + BDNF_N + NR1_N + NR2A_N + pAKT_N + pBRAF_N + pCAMKII_N +pCREB_N + pELK_N + pERK_N + pJNK_N + PKCA_N + pMEK_N + pNR1_N + pNR2A_N + pNR2B_N +
+pPKCAB_N + pRSK_N + AKT_N + BRAF_N + CAMKII_N + CREB_N + ELK_N + ERK_N + GSK3B_N +JNK_N + MEK_N + TRKA_N + RSK_N + APP_N + Bcatenin_N + SOD1_N + MTOR_N + P38_N + pMTOR_N + DSCR1_N + AMPKA_N + NR2B_N + pNUMB_N + RAPTOR_N + TIAM1_N + pP70S6_N + NUMB_N + P70S6_N + pGSK3B_N + pPKCG_N + CDK5_N + S6_N + ADARB1_N + AcetylH3K9_N + RRP1_N + BAX_N + ARC_N + nNOS_N + Tau_N + GFAP_N + GluR3_N + GluR4_N +
+IL1B_N + P3525_N + pCASP9_N + PSD95_N + SNCA_N + Ubiquitin_N + pGSK3B_Tyr216_N + SHH_N + pS6_N + SYP_N + CaNA_N, data = cute_mouse)
+summary(full_model)
+```
+
+#На основе вывода summery и теста на мультиколлениарность отбрасываем часть независимых переменных
+
+```{r}
+cut3.5_model <- lm(ERBB4_N ~ + pAKT_N + pERK_N + pPKCAB_N  + pGSK3B_N + pPKCG_N + BAX_N + ARC_N + Tau_N + GluR4_N + IL1B_N + P3525_N + pCASP9_N + PSD95_N  + pGSK3B_Tyr216_N , data = cute_mouse)
+summary(cut3.5_model)
+```
+# Проверяем модель на наличие коллерирующий переменных, показатели удовлетворительные
+
+```{r}
+check_collinearity(cut3.5_model)
+```
+
+#Проверим на гетероскидастичность, всё ок)
+
+```{r}
+check_heteroscedasticity(cut3.5_model)
+check_model(cut3.5_model)
+
+```
+
+```{r}
+
+mouse.pca <- prcomp(cute_mouse[,-c(1,79,80,81,82)], center = TRUE,scale. = TRUE)
+summary(mouse.pca)
+fviz_eig(mouse.pca)
+
+```
+
+Две первые компоненты объясняют около 45% переменных. Также в качестве переменной ответа я добавил переменную показывающую стимулировались ли мыши к обучению или нет. Мы можем довольно чётко увидеть разницу.
+```{r}
+
+library("factoextra")
+fviz_pca_ind(mouse.pca, geom.ind = "point", pointshape = 21, 
+             pointsize = 2, 
+             fill.ind = cute_mouse$Behavior, 
+             col.ind = "black", 
+             palette = "jco", 
+             addEllipses = TRUE,
+             label = "var",
+             col.var = "black",
+             repel = TRUE,
+             legend.title = "Diagnosis") +
+  ggtitle("2D PCA-plot from 30 feature dataset") +
+  theme(plot.title = element_text(hjust = 0.5))
+         
+         
+```
+
+
+## 3D график, но он не работает в RMD
+```{r}
+
+#pca3d(mouse.pca, group = cute_mouse[,-c(1,79,80,81,82)])
+```
+
+
+
+
